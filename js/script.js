@@ -18,20 +18,18 @@ function loadData() {
 
   $greeting.text('So, you want to live at ' + address + '?');
 
-  var link = 'http://maps.googleapis.com/maps/api/streetview?size=600x400&location=' + address;
+  var mapsURL = 'http://maps.googleapis.com/maps/api/streetview?size=600x400&location=' + address;
 
   // load streetview
-  $body.append('<img class="bgimg" src=' + link + '>');
+  $body.append('<img class="bgimg" src=' + mapsURL + '>');
 
   // NYTimes AJAX request
-  var url = 'https://api.nytimes.com/svc/search/v2/articlesearch.json';
-  url += '?' + $.param({
+  var nytURL = 'https://api.nytimes.com/svc/search/v2/articlesearch.json';
+  nytURL += '?' + $.param({
     'api-key': "0a325e9572f4446abdb9e2075802402b",
     'q': $city
   });
-  $.getJSON(url, function(data) {
-    console.log(data.status);
-    console.log(data.response.docs);
+  $.getJSON(nytURL, function(data) {
     var link, text;
     $.each(data.response.docs, function() {
       link = '<a href="' + this.web_url + '">' + this.headline.main + '</a>';
@@ -45,6 +43,24 @@ function loadData() {
   }).error(function() {
       $nytHeaderElem.text('New York Times Articles Could Not Be Loaded');
     });
+
+  // Wikipedia AJAX request
+  var wikiURL = 'https://en.wikipedia.org/w/api.php?action=opensearch&search=' + $city + '&format=json&callback=wikiCallback';
+
+  var wikiRequestTimeout = setTimeout(function() {
+    $wikiElem.text("failed to get wikipedia resources");
+  }, 8000);
+
+  $.ajax( {
+    url: wikiURL,
+    dataType: 'jsonp',
+  } ).done( function(data) {
+    for (var i = 0, max = data[1].length; i < max; i++) {
+      link = '<a href="' + data[3][i] + '">' + data[1][i] + '</a>';
+      $wikiElem.append('<li>' + link + '</li>')
+    }
+    clearTimeout(wikiRequestTimeout);
+  });
 
   return false;
 };
